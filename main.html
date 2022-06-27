@@ -313,10 +313,11 @@
         if (pointsObj.i < routes.length) {
             // move the user along the line by 1 step ()
             var pointA = routes[pointsObj.i];
-            var pointB = routes[pointsObj.i + 1];
+            var pointB = routes[pointsObj.i++];
             // console.log(routes)
             // user moving gradually to the next point dynamically
             // this version stops on C
+
 
             var lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
             var lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
