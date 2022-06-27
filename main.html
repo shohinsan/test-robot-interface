@@ -308,59 +308,19 @@
     /* User takes 1 step */
     const step = (pointsObj) => {
 
-        // for (const currentPoint in pointsObj) {
-        //
-        //
-        //     if (pointsObj.i < routes.length) {
-        //
-        //         const pointA = routes[pointsObj.i];
-        //         const pointB = routes[pointsObj.i + 1];
-        //
-        //         for (let i = 0; i < routes.length; i++) {
-        //             userMarker = new L.marker([routes[i][pointsObj], routes[i][pointsObj+1]])
-        //                 .bindPopup(routes[i][0])
-        //             userMarker.setLatLng(
-        //                 new L.LatLng(
-        //                     userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
-        //                     userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
-        //                 )
-        //             );
-        //         }
-        //
-        //         currentNumSteps++;
-        //         // it was ==
-        //         if (currentNumSteps === maxNumSteps) pointsObj.i++;
-        //     }
-        // }
-        //
-        // userMarker.getLatLng = function () {
-        //     var lat = (e.latlng.lat);
-        //     var lng = (e.latlng.lng);
-        //     var newLatLng = new L.LatLng(lat, lng);
-        //     marker.setLatLng(newLatLng);
-        // }
-
         //TODO fix an a-b-c directed bag that so that it can work dynamically.
 
         if (pointsObj.i < routes.length) {
-
             // move the user along the line by 1 step ()
             var pointA = routes[pointsObj.i];
             var pointB = routes[pointsObj.i + 1];
             // console.log(routes)
-
             // user moving gradually to the next point dynamically
-
             // this version stops on C
 
             var lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
             var lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
-
-
             var newLatLng = new L.LatLng(lat, lng);
-
-
-
 
             // for (newLatLng of routes) {
             //     userMarker = new L.marker([newLatLng.lat, newLatLng.lng])
@@ -373,26 +333,8 @@
             //     );
             // }
 
-            // L.LatLng(lat, lng);
-
             userMarker.setLatLng(newLatLng);
-
-
-
-
-
-
-            // this version moves straight after heading to C
-
-            // userMarker.setLatLng(
-            //     new L.LatLng(
-            //         userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
-            //         userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
-            //     )
-            // );
-
             // number of steps user taking to move forward
-
             currentNumSteps++;
             // once the user reaches point B, set pointA = pointB and pointB = point C, it must go dinamically.
             if (currentNumSteps == maxNumSteps) pointsObj.i++;
