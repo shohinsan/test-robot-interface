@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css"
+    />
+
+
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+
+    <meta charset="UTF-8"/>
+    <meta
+            name="viewport"
+            content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+
+    <title>Cratus Technology GeoJSON</title>
+
+    <!-- Used CDN dependencies from leaflet.js-->
+    <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+            integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+            crossorigin=""
+    />
+    <link rel="stylesheet" href="./assets/css/main.css"/>
+</head>
+
+<body>
+<div id="map"></div>
+<div>
+    <button onclick="runSimulation()">Start</button>
+    <button onclick="showJSON()">Show JSON</button>
+</div>
+
+
+</body>
+
+
+</html>
+
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+        integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+        crossorigin="">
+</script>
+
+<script>
+
+    <!--  Function to create JSON File -->
+
+    function showJSON() {
+        var data = L.geoJson();
+        console.log('data: ', data);
+        var table = document.getElementById('table')
+        Object.keys(data).forEach(pointsObj => {
+            console.log('pointsObj: ', pointsObj);
+            console.log('steps: ', step);
+            console.log('', map.markers)
+
+
+            // var tr = document.createElement('tr');
+            // tr.innerHTML =
+            // '<td>' + JSON.polygon + '</td>' +
+            // '<td>' + JSON.polyline + '</td>' +
+
+            // '<td>' + JSON.step + '</td>' +
+            // '<td>' + JSON.seconds + '</td>' +
+
+            // '<td>' + JSON.pointA + '</td>' +
+            // '<td>' + JSON.pointB + '</td>' +
+
+
+            // table.showJSON(tr);
+
+            //     const data = JSON.parse(text);
+
+
+        });
+    }
+
+    // ------------------------------------------------
+
+    //  https://leafletjs.com/index.html
+
+    const map = L.map("map").setView([37.29422, 238.08416], 13);
+
+    // OSM Layer - is a collaborative project to create a free editable geographic database of the world.
+
+    // ignore
+    // const osm = L.tileLayer(
+    //     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    //     {
+    //         attribution:
+    //             '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    //     }
+    // );
+
+    // uncomment to recover map
+    // ignore
+    // osm.addTo(map);
+
+    // Marker - L.Marker is used to display clickable/draggable icons on the map. Extends Layer.
+
+    // https://leafletjs.com/reference.html#marker
+    // ignore
+    const singleMarker = L.marker([37.29422, 238.08416]);
+
+    // Tile layer
+
+    // https://leaflet-extras.github.io/leaflet-providers/preview/
+
+    // Google Map Layer
+
+    // https://stackoverflow.com/questions/9394190/leaflet-map-api-with-google-satellite-layer
+    // answered 177+
+
+    googleStreets = L.tileLayer(
+        "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+        {
+            maxZoom: 20,
+            subdomains: ["mt0", "mt1", "mt2", "mt3"],
+        }
+    );
+
+    // uncomment to recover map
+    // googleStreets.addTo(map);
+
+    // Satellite Layer
+
+    googleSat = L.tileLayer("http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+        maxZoom: 20,
+        subdomains: ["mt0", "mt1", "mt2", "mt3"],
+    });
+
+    // uncomment to recover map
+    // googleSat.addTo(map);
+
+    // Layer Control
+
+    // https://leafletjs.com/reference.html#control-layers
+
+    var baseLayers = {
+        Satellite: googleSat,
+        "Google Map": googleStreets,
+    };
+
+    var overlays = {
+        // ignore
+        Marker: singleMarker,
+    };
+
+    L.control.layers(baseLayers, overlays).addTo(map);
+
+    // GEOJSON
+
+    // https://geojson.io/#map=20/37.29419/238.08499]
+
+    // uncomment to recover map
+
+    var myLines = [
+        {
+            type: "LineString",
+            properties: {
+                stroke: "#555555",
+                "stroke-width": 2,
+                "stroke-opacity": 1,
+                fill: "#11ff00",
+                "fill-opacity": 0.5,
+                weight: 5,
+                offset: 5,
+            },
+            coordinates: [
+                [238.01673889160156, 37.25929865437848],
+                [238.15698623657224, 37.25929865437848],
+                [238.15698623657224, 37.33413244661209],
+                [238.01673889160156, 37.33413244661209],
+                [238.01673889160156, 37.25929865437848],
+            ],
+        },
+
+
+    ];
+
+    var myStyle = {
+        color: "##ff7800",
+        fill: "red",
+        "fill-opacity": 0.5,
+        weight: 5,
+        opacity: 0,
+        offset: 1.5,
+    };
+
+    // store markers here on map
+
+    var markers = new Map();
+    var routes = new Array();
+    var userMarker;
+
+    var length = 100;
+    var width = 100;
+
+    L.geoJson(myLines,
+        {
+            style: myStyle,
+            onEachFeature: function (feature, layer) {
+                var coords = feature.coordinates;
+
+                var lengthOfCoordinates = feature.coordinates.length;
+
+                var dl = (coords[2][0] - coords[0][0]) / length;
+                var dw = (coords[2][1] - coords[0][1]) / width;
+
+                // square
+
+                layer.on("click", (e) => {
+                    console.log("hit on click handler");
+
+                    // d in m
+
+                    var gridy = Math.floor((e.latlng.lat - coords[2][0]) / dl);
+                    var gridx = Math.floor((e.latlng.lng - coords[2][1]) / dw);
+
+
+                    pair = {lat: gridy, lng: gridx};
+
+                    // if there's a marker or not
+
+                    // create marker
+                    var marker = L.marker(
+                        {
+                            lat: gridy * dl + dl / 2 + coords[2][0],
+                            lng: gridx * dw + dw / 2 + coords[2][1],
+                        },
+                        e.pane
+                    );
+
+                    // push marker to array
+                    routes.push(marker.getLatLng());
+
+                    // delete marker on click
+                    marker.on("click", () => {
+                        console.log("Marker has been deleted!!!");
+                        map.removeLayer(marker);
+                        markers.delete(pair);
+                    });
+
+                    marker.addTo(map);
+
+                    // initialize userMarker
+                    if (routes.length === 1) {
+                        var UserIcon = L.Icon.extend({
+                            options: {
+                                iconSize: [38, 95],
+                                shadowSize: [0, 0],
+                                iconAnchor: [22, 94],
+                                shadowAnchor: [4, 62],
+                                popupAnchor: [-3, -76],
+                            },
+                        });
+
+                        var userIcon = new UserIcon({
+                            iconUrl: "./assets/images/sport-car.png",
+                            shadowUrl:
+                                "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+                        });
+
+                        userMarker = L.marker(marker.getLatLng(), {icon: userIcon}).addTo(
+                            map
+                        );
+                    }
+
+                    // draw line between markers
+                    if (routes.length > 1)
+                        var polyline = L.polyline(
+                            [routes[routes.length - 1], routes[routes.length - 2]],
+                            {color: "red"}
+                        ).addTo(map);
+
+                    // distance , d = sqrt((y1-y2)^2+(x1-x2)^2)
+                    // marker 1 marker 2
+
+                    markers.set(pair, marker);
+                });
+
+                let holdWorkArea;
+                for (let i = 0; i < lengthOfCoordinates; i++) {
+                    // swap x and y, save x in var holdLon then drop back into second position
+                    holdWorkArea = coords[i][0];
+                    coords[i][0] = coords[i][1];
+                    coords[i][1] = holdWorkArea;
+                }
+
+                offset = L.polygon(coords, feature.properties).addTo(map);
+            },
+
+        }).addTo(map);
+
+    //You can just keep adding markers
+
+    let currentNumSteps = 0;
+
+    // number of steps to reach next marker
+    let maxNumSteps = 1;
+
+    /* User takes 1 step */
+    const step = (pointsObj) => {
+
+        // for (const currentPoint in pointsObj) {
+        //
+        //
+        //     if (pointsObj.i < routes.length) {
+        //
+        //         const pointA = routes[pointsObj.i];
+        //         const pointB = routes[pointsObj.i + 1];
+        //
+        //         for (let i = 0; i < routes.length; i++) {
+        //             userMarker = new L.marker([routes[i][pointsObj], routes[i][pointsObj+1]])
+        //                 .bindPopup(routes[i][0])
+        //             userMarker.setLatLng(
+        //                 new L.LatLng(
+        //                     userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
+        //                     userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
+        //                 )
+        //             );
+        //         }
+        //
+        //         currentNumSteps++;
+        //         // it was ==
+        //         if (currentNumSteps === maxNumSteps) pointsObj.i++;
+        //     }
+        // }
+        //
+        // userMarker.getLatLng = function () {
+        //     var lat = (e.latlng.lat);
+        //     var lng = (e.latlng.lng);
+        //     var newLatLng = new L.LatLng(lat, lng);
+        //     marker.setLatLng(newLatLng);
+        // }
+
+        //TODO fix an a-b-c directed bag that so that it can work dynamically.
+
+        if (pointsObj.i < routes.length) {
+
+            // move the user along the line by 1 step ()
+            var pointA = routes[pointsObj.i];
+            var pointB = routes[pointsObj.i + 1];
+            // console.log(routes)
+
+            // user moving gradually to the next point dynamically
+
+            // this version stops on C
+
+            var lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
+            var lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
+
+
+            var newLatLng = new L.LatLng(lat, lng);
+
+
+
+
+            // for (newLatLng of routes) {
+            //     userMarker = new L.marker([newLatLng.lat, newLatLng.lng])
+            //         .bindPopup(newLatLng.lat)
+            //     userMarker.setLatLng(
+            //         new L.LatLng(
+            //             userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
+            //             userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
+            //         )
+            //     );
+            // }
+
+            // L.LatLng(lat, lng);
+
+            userMarker.setLatLng(newLatLng);
+
+
+
+
+
+
+            // this version moves straight after heading to C
+
+            // userMarker.setLatLng(
+            //     new L.LatLng(
+            //         userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
+            //         userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
+            //     )
+            // );
+
+            // number of steps user taking to move forward
+
+            currentNumSteps++;
+            // once the user reaches point B, set pointA = pointB and pointB = point C, it must go dinamically.
+            if (currentNumSteps == maxNumSteps) pointsObj.i++;
+        }
+
+        // original code
+
+        // if (pointsObj.i < routes.length) {
+        //     // move the user along the line by 1 step ()
+        //     var pointA = routes[pointsObj.i];
+        //     var pointB = routes[pointsObj.i + 1];
+        //
+        //     // user moving gradually to the next point
+        //     userMarker.setLatLng(
+        //         new L.LatLng(
+        //             userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
+        //             userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
+        //         )
+        //     );
+        //
+        //     // number of steps user taking to move forward
+        //
+        //     currentNumSteps++;
+        //     // once the user reaches point B, set pointA = pointB and pointB = point C
+        //     if (currentNumSteps == maxNumSteps) pointsObj.i++;
+        // }
+
+
+
+
+
+
+
+
+    };
+
+    function runSimulation() {
+        console.log("starting simulation");
+        const seconds = 60;
+        const numSteps = 20;
+        let pointsObj = {
+            i: 0,
+        };
+        setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
+    }
+
+</script>

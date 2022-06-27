@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "geojson-offset": "^0.1.0"
+  }
+}
