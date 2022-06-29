@@ -51,35 +51,16 @@
 
     <!--  Function to create JSON File -->
 
+
+
     function showJSON() {
-        var data = L.geoJson();
-        console.log('data: ', data);
-        var table = document.getElementById('table')
-        Object.keys(data).forEach(pointsObj => {
-            console.log('pointsObj: ', pointsObj);
-            console.log('steps: ', step);
-            console.log('', map.markers)
+        JSON.stringify(myLines, null, '\t');
 
 
-            // var tr = document.createElement('tr');
-            // tr.innerHTML =
-            // '<td>' + JSON.polygon + '</td>' +
-            // '<td>' + JSON.polyline + '</td>' +
+        console.log(myLines)
 
-            // '<td>' + JSON.step + '</td>' +
-            // '<td>' + JSON.seconds + '</td>' +
-
-            // '<td>' + JSON.pointA + '</td>' +
-            // '<td>' + JSON.pointB + '</td>' +
-
-
-            // table.showJSON(tr);
-
-            //     const data = JSON.parse(text);
-
-
-        });
     }
+
 
     // ------------------------------------------------
 
@@ -180,8 +161,6 @@
                 [238.01673889160156, 37.25929865437848],
             ],
         },
-
-
     ];
 
     var myStyle = {
@@ -217,16 +196,11 @@
 
                 layer.on("click", (e) => {
                     console.log("hit on click handler");
-
-                    // d in m
-
+                    // d in meters
                     var gridy = Math.floor((e.latlng.lat - coords[2][0]) / dl);
                     var gridx = Math.floor((e.latlng.lng - coords[2][1]) / dw);
 
-
                     pair = {lat: gridy, lng: gridx};
-
-                    // if there's a marker or not
 
                     // create marker
                     var marker = L.marker(
@@ -247,6 +221,23 @@
                         markers.delete(pair);
                     });
 
+                    marker.addTo(map);
+
+                    // drag marker
+
+                    marker.dragging.enable();
+
+                    marker.on("dragend", (e) => {
+                        console.log("dragend");
+                        var lat = e.target.getLatLng().lat;
+                        var lng = e.target.getLatLng().lng;
+                        var pair = {lat: lat, lng: lng};
+
+                        if (markers.set(pair, marker)){
+                            //TODO: update polyline location
+                        }
+
+                    });
                     marker.addTo(map);
 
                     // initialize userMarker
@@ -270,20 +261,29 @@
                         userMarker = L.marker(marker.getLatLng(), {icon: userIcon}).addTo(
                             map
                         );
-                    }
 
+                    }
                     // draw line between markers
                     if (routes.length > 1)
-                        var polyline = L.polyline(
+                        var polyline = L.polyline (
                             [routes[routes.length - 1], routes[routes.length - 2]],
-                            {color: "red"}
+
+                            {
+                                color: "black",
+                                weight: 5,
+                                opacity: 0.5,
+                                smoothFactor: 1,
+                            }
                         ).addTo(map);
 
-                    // distance , d = sqrt((y1-y2)^2+(x1-x2)^2)
-                    // marker 1 marker 2
+                    polyline.bindPopup("<b>Distance:</b> " + dl + "m");
 
-                    markers.set(pair, marker);
+
+
                 });
+
+                // the GeoJSON layer ends here
+
 
                 let holdWorkArea;
                 for (let i = 0; i < lengthOfCoordinates; i++) {
@@ -295,80 +295,37 @@
 
                 offset = L.polygon(coords, feature.properties).addTo(map);
             },
-
         }).addTo(map);
 
     //You can just keep adding markers
-
     let currentNumSteps = 0;
-
     // number of steps to reach next marker
     let maxNumSteps = 1;
 
+
     /* User takes 1 step */
     const step = (pointsObj) => {
-
-        //TODO fix an a-b-c directed bag that so that it can work dynamically.
-
         if (pointsObj.i < routes.length) {
             // move the user along the line by 1 step ()
             var pointA = routes[pointsObj.i];
             var pointB = routes[pointsObj.i++];
             // console.log(routes)
             // user moving gradually to the next point dynamically
-            // this version stops on C
-
-
             var lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
             var lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
             var newLatLng = new L.LatLng(lat, lng);
-            // for (newLatLng of routes) {
-            //     userMarker = new L.marker([newLatLng.lat, newLatLng.lng])
-            //         .bindPopup(newLatLng.lat)
-            //     userMarker.setLatLng(
-            //         new L.LatLng(
-            //             userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
-            //             userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
-            //         )
-            //     );
-            // }
-
             userMarker.setLatLng(newLatLng);
             // number of steps user taking to move forward
             currentNumSteps--;
             // once the user reaches point B, set pointA = pointB and pointB = point C, it must go dinamically.
             if (currentNumSteps == maxNumSteps) pointsObj.i++;
+
+        } else {
+            // ?
+            stop();
+            // user has reached the end of the line
+            console.log("user has reached the end of the line");
         }
-
-        // original code
-
-        // if (pointsObj.i < routes.length) {
-        //     // move the user along the line by 1 step ()
-        //     var pointA = routes[pointsObj.i];
-        //     var pointB = routes[pointsObj.i + 1];
-        //
-        //     // user moving gradually to the next point
-        //     userMarker.setLatLng(
-        //         new L.LatLng(
-        //             userMarker.getLatLng().lat + (pointB.lat - pointA.lat) / maxNumSteps,
-        //             userMarker.getLatLng().lng + (pointB.lng - pointA.lng) / maxNumSteps
-        //         )
-        //     );
-        //
-        //     // number of steps user taking to move forward
-        //
-        //     currentNumSteps++;
-        //     // once the user reaches point B, set pointA = pointB and pointB = point C
-        //     if (currentNumSteps == maxNumSteps) pointsObj.i++;
-        // }
-
-
-
-
-
-
-
-
     };
 
     function runSimulation() {
