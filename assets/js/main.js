@@ -1,13 +1,17 @@
 // ------------------------------------------------
+// Create a new map
+// ------------------------------------------------
 //  https://leafletjs.com/index.html
 const map = L.map("map").setView([37.29422, 238.08416], 13);
 // https://leafletjs.com/reference.html#marker
-const singleMarker = L.marker([37.29422, 238.08416]); // ignore
+// const singleMarker = L.marker([37.29422, 238.08416]); // ignore
 // ------------------------------------------------
 // Tile layer
 // ------------------------------------------------
 // https://leaflet-extras.github.io/leaflet-providers/preview/
-// Google Map Layer
+// ------------------------------------------------
+// Google Map API Layer
+// ------------------------------------------------
 // https://stackoverflow.com/questions/9394190/leaflet-map-api-with-google-satellite-layer
 googleStreets = L.tileLayer(
     "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
@@ -16,20 +20,31 @@ googleStreets = L.tileLayer(
         subdomains: ["mt0", "mt1", "mt2", "mt3"],
     }
 );
-// uncomment to recover map
-// googleStreets.addTo(map);
-// Satellite Layer
+// ------------------------------------------------
+// Google Satellite Map
+// ------------------------------------------------
 googleSat = L.tileLayer("http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
     maxZoom: 20,
     subdomains: ["mt0", "mt1", "mt2", "mt3"],
 });
-// uncomment to recover map
-// googleSat.addTo(map);
-// Layer Control
+
+smoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
+    attribution: '&copy; ' +
+        '<a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; ' +
+        '<a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; ' +
+        '<a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+});
+// googleSat.addTo(map); // uncomment to recover map
+smoothDark.addTo(map); // uncomment to recover map
+// ------------------------------------------------
+// Layer control
+// ------------------------------------------------
 // https://leafletjs.com/reference.html#control-layers
 var baseLayers = {
     "Satellite Google Map": googleSat,
     "Default Google Map": googleStreets,
+    "Smooth Dark": smoothDark,
 };
 var overlays = {}; // ignore, additional parameters if needed
 L.control.layers(baseLayers, overlays).addTo(map);
@@ -50,6 +65,7 @@ var myLines = [
             weight: 5,
             offset: 5,
         },
+
         // Have your coordinates of shapes here
         coordinates: [
             [238.01673889160156, 37.25929865437848],
@@ -58,9 +74,10 @@ var myLines = [
             [238.01673889160156, 37.33413244661209],
             [238.01673889160156, 37.25929865437848],
         ],
-        // coordinates2: [[..,..]],
+
     },
 ];
+
 var myStyle = {
     color: "##ff7800",
     fill: "red",
@@ -70,13 +87,14 @@ var myStyle = {
     offset: 1.5,
 };
 
-// store markers here on map
 var markers = new Map();
-var routes = new Array();
-var userMarker;
+var routes = [];
+var lines = [];
 
-var length = 100;
-var width = 100;
+var atomicCounter = 1;
+
+// var length = 100;
+// var width = 100;
 
 L.geoJson(myLines,
     {
@@ -84,43 +102,36 @@ L.geoJson(myLines,
         onEachFeature: function (feature, layer) {
             var coords = feature.coordinates;
             var lengthOfCoordinates = feature.coordinates.length;
-            var dl = (coords[2][0] - coords[0][0]) / length;
-            var dw = (coords[2][1] - coords[0][1]) / width;
-
+            // var dl = (coords[2][0] - coords[0][0]) / length;
+            // var dw = (coords[2][1] - coords[0][1]) / width;
             // square or polygon
             layer.on("click", (e) => {
-
                 console.log("hitOnClickHandler");
-                // distance in meters [used for drawing the polygon]
-                var y_axis_grid = Math.floor((e.latlng.lat - coords[2][0]) / dl);
-                var x_axis_grid = Math.floor((e.latlng.lng - coords[2][1]) / dw);
-                // combining x and y coordinate in pairs
-                pair = {lat: y_axis_grid, lng: x_axis_grid};
-                // create marker
-                marker = L.marker(
-                    {
-                        lat: y_axis_grid * dl + dl / 2 + coords[2][0],
-                        lng: x_axis_grid * dw + dw / 2 + coords[2][1],
-                    },
+
+                // // haversineDistance in meters [used for drawing the polygon]
+                // var y_axis_grid = Math.floor((e.latlng.lat - coords[2][0]) / dl);
+                // var x_axis_grid = Math.floor((e.latlng.lng - coords[2][1]) / dw);
+                // // combining x and y coordinate in pairs
+                // pair = {lat: y_axis_grid, lng: x_axis_grid};
+
+                // // create marker
+                let marker = L.marker(
+                    e.latlng,
                     e.pane
                 );
-
-                // push marker to array
-                routes.push(marker.getLatLng());
-
-                deleteMarkerOnMouseClick(marker);
-                moveMarkerWithRouteOnMouseDrag(marker);
-
-                if (routes.length === 1) {
-                    initializeUserMarker(marker);
+                // give both the marker and the path a unique id
+                var route = {
+                    "id": atomicCounter,
+                    "marker": marker
                 }
-
-                if (routes.length > 1) drawLineBetweenMarkers();
+                // push marker to array
+                routes.push(route);
+                atomicCounter++
+                deleteMarkerOnMouseClick(route);
+                moveMarkerWithRouteOnMouseDrag(route);
+                if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
             });
-
             // the GeoJSON layer ends here
-
-
             let holdWorkArea;
             for (let i = 0; i < lengthOfCoordinates; i++) {
                 // swap x and y, save x in var holdLon then drop back into second position
@@ -141,158 +152,230 @@ const step = (pointsObj) => {
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
-function polygonHandler() {
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
 // start the animation for the user icon
-function runSimulation() {
-    console.log("starting simulation");
+
+function runSimulation(button) {
+    let buttonId = button.id;
     const seconds = 60;
     const numSteps = 20;
-    let pointsObj = {
-        i: 0,
-    };
-    setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
+    let pointsObj;
+    // console.log("starting simulation");
+    // console.log('routes: ', routes);
+    switch (buttonId) {
+        case "forward":
+            initializeUserMarker(routes[0].marker);
+            pointsObj = {  // start the animation
+                i: 0,
+            };
+            setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
+            runSimulation(buttonId);
+            break;
+
+        case "backward":
+            initializeUserMarker(routes[0].marker);
+            pointsObj = { // start the animation
+                i: 0,
+            };
+            setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
+            runSimulation(buttonId);
+            break;
+
+        default:
+            console.log("starting simulation");
+    }
+
+
+
+
+
 }
 
+
 // ---------------------------------------------------------------------------------------------------------------------
-function drawLineBetweenMarkers() {
-    var polyline = L.polyline(
-        [routes[routes.length - 1], routes[routes.length - 2]],
+function drawLineBetweenMarkers(fromRoute, toRoute) {
+
+    // switch case polyline case 1
+
+    var polyline = L.polyline([
+            fromRoute.marker.getLatLng(),
+            toRoute.marker.getLatLng(),
+        ],
         {
             enableDraggableLines: true,
-            color: "black",
+            color: "white",
             weight: 5,
             opacity: 0.5,
             smoothFactor: 1,
         }
     ).addTo(map);
+
+    lines.push({
+        "polyline": polyline,
+        "from": fromRoute.id,
+        "to": toRoute.id,
+    });
+
+
+    console.log("routes: ", routes);
+    console.log("lines: ", lines);
+
+
+    fromRouteLat = fromRoute.marker.getLatLng().lat;
+    fromRouteLng = fromRoute.marker.getLatLng().lng;
+    toRouteLat = toRoute.marker.getLatLng().lat;
+    toRouteLng = toRoute.marker.getLatLng().lng;
+
+    polyline.bindPopup("<b>Distance:</b> "
+        + haversineDistance(fromRouteLat, fromRouteLng, toRouteLat, toRouteLng)
+            .toFixed(2)
+        + " km");
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 function pathsAlgorithm(pointsObj) {
+
+    // switch case polyline case 1
+
     if (pointsObj.i < routes.length) {
         // move the user along the line by 1 step ()
-        var pointA = routes[pointsObj.i];
-        var pointB = routes[pointsObj.i++];
-        // console.log(routes)
+        let pointA = routes[pointsObj.i].marker.getLatLng();
+        let pointB = routes[pointsObj.i++].marker.getLatLng();
+
         // user moving gradually to the next point dynamically
-        var lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
-        var lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
-        var newLatLng = new L.LatLng(lat, lng);
-        userMarker.setLatLng(newLatLng);
+        let lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
+        let lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
+        let newLatLng = new L.LatLng(lat, lng);
+
+        userMarker.marker.setLatLng(newLatLng);
         // number of steps user taking to move forward
         currentNumSteps--;
         // once the user reaches point B, set pointA = pointB and pointB = point C, it must go dinamically.
-        if (currentNumSteps == maxNumSteps) pointsObj.i++;
-    } else {
-        // user has reached the end of the line
-        console.log("user has reached the end of the line");
+        if (currentNumSteps === maxNumSteps) pointsObj.i++;
     }
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-function moveMarkerWithRouteOnMouseDrag(marker) {
-    marker.dragging.enable();
-    marker.on("dragend", (e) => {
-        console.log("Marker has been moved!!!");
-        var lat = e.target.getLatLng().lat;
-        var lng = e.target.getLatLng().lng;
-        var pair = {lat: lat, lng: lng};
-        markers.set(pair, marker);
+function moveMarkerWithRouteOnMouseDrag(route) {
+    route.marker.dragging.enable();
+    route.marker.on("dragend", (e) => {
 
-        routes = [];
-        const tempMarker = []
-        markers.forEach((v, index) => {
-            tempMarker.push(v.getLatLng())
-        })
-        console.log({tempMarker});
+        route.marker.setLatLng(e.target.getLatLng())
 
-        for (let i in map._layers) {
+        for (let i = 0; i < lines.length; i++) {
 
-            // if (i === 0) {
-            //     userMarker.dragging.enable();
-            // }
+            if (lines[i].from === route.id) {
+                lines[i].polyline.setLatLngs([
+                    e.target.getLatLng(),
+                    lines[i].polyline.getLatLngs()[1]
+                ]);
+            }
 
-            if (map._layers[i]._path !== undefined) {
-                map.removeLayer(map._layers[i]);
-                try {
-                    markers.removeLayer(map._layers[i]);
+            if (lines[i].to === route.id) {
+                lines[i].polyline.setLatLngs([
+                    lines[i].polyline.getLatLngs()[0],
+                    e.target.getLatLng()
 
-
-
-
-                    // markers.addLayer(map._layers[i]);
-
-                } catch (e) {
-                    console.log(e);
-                }
-
+                ]);
             }
 
 
 
+            // update the distance of the line on drag
+            let fromLinesLat = lines[i].polyline.getLatLngs()[0].lat;
+            let fromLinesLng = lines[i].polyline.getLatLngs()[0].lng;
+            let toLinesLat = lines[i].polyline.getLatLngs()[1].lat;
+            let toLinesLng = lines[i].polyline.getLatLngs()[1].lng;
 
+            lines[i].polyline.bindPopup("<b>Distance:</b> "
+                + haversineDistance(fromLinesLat, fromLinesLng, toLinesLat, toLinesLng)
+                .toFixed(2)
+                + " km");
 
         }
-
-        // loop markers and move polyline
-        tempMarker.forEach((v, index) => {
-            // const lt = marker.getLatLng();
-            console.log('loop', v);
-
-            if (tempMarker[index + 1]) {
-                const nPolyline = L.polyline(
-                    [v, tempMarker[index + 1]], {
-                        enableDraggableLines: true,
-                        color: "black",
-                        weight: 5,
-                        opacity: 0.5,
-                        smoothFactor: 1,
-                    }
-                ).addTo(map);
-                routes.push(nPolyline);
-            }
-        })
-        console.log({map, routes, markers})
     });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-function deleteMarkerOnMouseClick(marker) {
-
-    marker.on("click", () => {
+function deleteMarkerOnMouseClick(route) {
+    route.marker.on("click", () => {
         console.log("Marker has been deleted!!!");
-        map.removeLayer(marker);
-        markers.delete(pair);
+        map.removeLayer(route.marker);
+
+        let newFrom = 0;
+        let newTo = 0;
+
+        // deleting lines
+        let i = 0;
+        while (i < lines.length) {
+            if (lines[i].from === route.id) {
+                map.removeLayer(lines[i].polyline);
+                newTo = lines[i].to;
+                lines.splice(i, 1);
+            } else if (lines[i].to === route.id) {
+                map.removeLayer(lines[i].polyline);
+                newFrom = lines[i].from;
+                lines.splice(i, 1);
+            } else {
+                i++;
+            }
+        }
+
+        console.log("lines: ", lines);
+        console.log("newFrom: ", newFrom);
+        console.log("newTo: ", newTo);
+
+        if (newFrom !== 0 && newTo !== 0) {
+            let fromRoute;
+            let toRoute;
+
+            for (let i = 0; i < routes.length; i++) {
+                if (routes[i].id === newFrom) {
+                    fromRoute = routes[i];
+                } else if (routes[i].id === newTo) {
+                    toRoute = routes[i];
+                }
+            }
+            drawLineBetweenMarkers(fromRoute, toRoute);
+        }
+
+        for (let i = 0; i < routes.length; i++) {
+            if (routes[i].id === route.id) {
+                routes.splice(i, 1);
+                break
+            }
+        }
 
     });
-    marker.addTo(map);
-
+    route.marker.addTo(map);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 function initializeUserMarker(marker) {
     const UserIcon = L.Icon.extend({
         options: {
-            iconSize: [38, 95],
+            // 38, 95
+            iconSize: [50, 100],
             shadowSize: [0, 0],
             iconAnchor: [22, 94],
             shadowAnchor: [4, 62],
             popupAnchor: [-3, -76],
         },
     });
+
     // user icon
     var userIcon = new UserIcon({
-        iconUrl: "./assets/images/sport-car.png",
+        iconUrl: "./assets/images/robot.png",
         shadowUrl:
             "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
     });
+
     // add icon to map
-    userMarker = L.marker(marker.getLatLng(), {icon: userIcon}).addTo(
-        map
-    );
+    userMarker = {
+        "id": atomicCounter,
+        "marker": L.marker(marker.getLatLng(), {icon: userIcon}).addTo(map)
+    };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -307,6 +390,34 @@ function showJsonOnButtonClick(content, fileName, contentType) {
 // Additional function for JSON
 function showJSON() {
     showJsonOnButtonClick(JSON.stringify(myLines), "yourfile.json", "text/plain");
+
+    const markers = [];
+    routes.forEach(item => {
+        markers.push(item.marker.getLatLng());
+    })
+
+    showJsonOnButtonClick(JSON.stringify(markers), "yourfile.json", "text/plain");
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2 - lat1);  // deg2rad below
+    var dLon = deg2rad(lon2 - lon1);
+    var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c; // Distance in km
+    // miles = d * 0.62137; // feet = d * 3280.839895; // inches = d * 39370.078740;
+    return d;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180)
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+// return icon back to point in the beginning of the line

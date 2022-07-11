@@ -17,8 +17,11 @@
 <div id="map"></div>
 <script src="/assets/js/main.js"> </script>
 <div class = "leaflet-top leaflet-left" style="pointer-events: auto; padding-left: 3rem; margin: 2rem">
-    <button onclick="runSimulation()">Start</button>
+
+    <button type="button" onclick="runSimulation(this)" id="forward">Move Forward</button>
+    <button type="button" onclick="runSimulation(this)" id="backward">Return Back</button>
     <button onclick="showJSON()">Show JSON</button>
+
 </div>
 </body>
 </html>
