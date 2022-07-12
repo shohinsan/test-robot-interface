@@ -90,11 +90,8 @@ var myStyle = {
 var markers = new Map();
 var routes = [];
 var lines = [];
-
 var atomicCounter = 1;
-
-// var length = 100;
-// var width = 100;
+let userMarker; // this variable for the purpose of not creating second robot icon inside runSimulation function
 
 L.geoJson(myLines,
     {
@@ -102,28 +99,22 @@ L.geoJson(myLines,
         onEachFeature: function (feature, layer) {
             var coords = feature.coordinates;
             var lengthOfCoordinates = feature.coordinates.length;
-            // var dl = (coords[2][0] - coords[0][0]) / length;
-            // var dw = (coords[2][1] - coords[0][1]) / width;
             // square or polygon
             layer.on("click", (e) => {
                 console.log("hitOnClickHandler");
 
-                // // haversineDistance in meters [used for drawing the polygon]
-                // var y_axis_grid = Math.floor((e.latlng.lat - coords[2][0]) / dl);
-                // var x_axis_grid = Math.floor((e.latlng.lng - coords[2][1]) / dw);
-                // // combining x and y coordinate in pairs
-                // pair = {lat: y_axis_grid, lng: x_axis_grid};
-
-                // // create marker
+                // create marker
                 let marker = L.marker(
                     e.latlng,
                     e.pane
                 );
+
                 // give both the marker and the path a unique id
                 var route = {
                     "id": atomicCounter,
                     "marker": marker
                 }
+
                 // push marker to array
                 routes.push(route);
                 atomicCounter++
@@ -131,10 +122,10 @@ L.geoJson(myLines,
                 moveMarkerWithRouteOnMouseDrag(route);
                 if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
             });
-            // the GeoJSON layer ends here
+
+            // helps to draw the line the polygon
             let holdWorkArea;
             for (let i = 0; i < lengthOfCoordinates; i++) {
-                // swap x and y, save x in var holdLon then drop back into second position
                 holdWorkArea = coords[i][0];
                 coords[i][0] = coords[i][1];
                 coords[i][1] = holdWorkArea;
@@ -142,6 +133,8 @@ L.geoJson(myLines,
             offset = L.polygon(coords, feature.properties).addTo(map);
         },
     }).addTo(map);
+// ---------------------------------------------------------------------------------------------------------------------
+
 //You can just keep adding markers
 let currentNumSteps = 0;
 // number of steps to reach next marker
@@ -159,35 +152,23 @@ function runSimulation(button) {
     const seconds = 60;
     const numSteps = 20;
     let pointsObj;
-    // console.log("starting simulation");
-    // console.log('routes: ', routes);
+
+    if (userMarker === undefined) {
+        initializeUserMarker(routes[0].marker);
+    }
+
     switch (buttonId) {
         case "forward":
-            initializeUserMarker(routes[0].marker);
-            pointsObj = {  // start the animation
-                i: 0,
-            };
+            pointsObj = { i: 0, j: 1 };
             setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
-            runSimulation(buttonId);
             break;
-
         case "backward":
-            initializeUserMarker(routes[0].marker);
-            pointsObj = { // start the animation
-                i: 0,
-            };
+            pointsObj = { i: 1,};
             setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
-            runSimulation(buttonId);
             break;
-
         default:
             console.log("starting simulation");
     }
-
-
-
-
-
 }
 
 
@@ -235,8 +216,6 @@ function drawLineBetweenMarkers(fromRoute, toRoute) {
 // ---------------------------------------------------------------------------------------------------------------------
 function pathsAlgorithm(pointsObj) {
 
-    // switch case polyline case 1
-
     if (pointsObj.i < routes.length) {
         // move the user along the line by 1 step ()
         let pointA = routes[pointsObj.i].marker.getLatLng();
@@ -251,9 +230,19 @@ function pathsAlgorithm(pointsObj) {
         // number of steps user taking to move forward
         currentNumSteps--;
         // once the user reaches point B, set pointA = pointB and pointB = point C, it must go dinamically.
-        if (currentNumSteps === maxNumSteps) pointsObj.i++;
-    }
 
+        switch (pointsObj.i) {
+            case "forward":
+                if (currentNumSteps === maxNumSteps) pointsObj.i++;
+                break;
+            case "backward":
+                if (currentNumSteps === maxNumSteps) pointsObj.i--;
+                break;
+        }
+
+        // remove switch case if needed
+        // if (currentNumSteps === maxNumSteps) pointsObj.i++;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -280,8 +269,6 @@ function moveMarkerWithRouteOnMouseDrag(route) {
                 ]);
             }
 
-
-
             // update the distance of the line on drag
             let fromLinesLat = lines[i].polyline.getLatLngs()[0].lat;
             let fromLinesLng = lines[i].polyline.getLatLngs()[0].lng;
@@ -290,7 +277,7 @@ function moveMarkerWithRouteOnMouseDrag(route) {
 
             lines[i].polyline.bindPopup("<b>Distance:</b> "
                 + haversineDistance(fromLinesLat, fromLinesLng, toLinesLat, toLinesLng)
-                .toFixed(2)
+                    .toFixed(2)
                 + " km");
 
         }
@@ -391,7 +378,7 @@ function showJsonOnButtonClick(content, fileName, contentType) {
 function showJSON() {
     showJsonOnButtonClick(JSON.stringify(myLines), "yourfile.json", "text/plain");
 
-    const markers = [];
+    // const markers = [];
     routes.forEach(item => {
         markers.push(item.marker.getLatLng());
     })
