@@ -1,58 +1,41 @@
-// ------------------------------------------------
-// Create a new map
-// ------------------------------------------------
-//  https://leafletjs.com/index.html
+// Define the map
 const map = L.map("map").setView([37.29422, 238.08416], 13);
-// https://leafletjs.com/reference.html#marker
-// const singleMarker = L.marker([37.29422, 238.08416]); // ignore
-// ------------------------------------------------
-// Tile layer
-// ------------------------------------------------
-// https://leaflet-extras.github.io/leaflet-providers/preview/
-// ------------------------------------------------
-// Google Map API Layer
-// ------------------------------------------------
-// https://stackoverflow.com/questions/9394190/leaflet-map-api-with-google-satellite-layer
+// Google Maps Tile Layer
 googleStreets = L.tileLayer(
-    "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
-    {
+    "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
         maxZoom: 20,
         subdomains: ["mt0", "mt1", "mt2", "mt3"],
     }
 );
-// ------------------------------------------------
-// Google Satellite Map
-// ------------------------------------------------
-googleSat = L.tileLayer("http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+// Google Satellite Tile Layer
+googleSat = L.tileLayer("https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
     maxZoom: 20,
     subdomains: ["mt0", "mt1", "mt2", "mt3"],
 });
-
+// Smooth Dark Tile Layer
 smoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
     maxZoom: 20,
     attribution: '&copy; ' +
         '<a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; ' +
         '<a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; ' +
-        '<a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+        '<a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
 });
-// googleSat.addTo(map); // uncomment to recover map
-smoothDark.addTo(map); // uncomment to recover map
-// ------------------------------------------------
-// Layer control
-// ------------------------------------------------
+// Permanently display tile layer on the map
+smoothDark.addTo(map);
+// Map Controller at Top Right Corner
 // https://leafletjs.com/reference.html#control-layers
-var baseLayers = {
+let baseLayers = {
     "Satellite Google Map": googleSat,
     "Default Google Map": googleStreets,
     "Smooth Dark": smoothDark,
 };
-var overlays = {}; // ignore, additional parameters if needed
-L.control.layers(baseLayers, overlays).addTo(map);
-// ------------------------------------------------
-// GEOJSON
-// https://geojson.io/#map=20/37.29419/238.08499]
+// Additional Map Controller to choose different floors
+let overlays = {
 
-var myLines = [
+};
+L.control.layers(baseLayers, overlays).addTo(map);
+// GeoJSON
+let myLines = [
     {
         // LineString is a type of Geometry used for representing  both a polyline and a polygon on a map.
         type: "LineString",
@@ -75,10 +58,23 @@ var myLines = [
             [238.01673889160156, 37.25929865437848],
         ],
 
+        // [-121.9178581237793, 37.29872199115923],
+        // [-121.92221403121948, 37.29602499353953],
+        // [-121.91805124282835, 37.29083556154404],
+        // [-121.91287994384766, 37.29083556154404],
+        // [-121.91337347030638, 37.29884147615852],
+        // [-121.9178581237793, 37.29872199115923],
+
+        // [-121.91251516342163, 37.29896096096796],
+        // [-121.91230058670044, 37.29093798800685],
+        // [-121.90706491470337, 37.29076727715807],
+        // [-121.90700054168701, 37.29894389172109],
+        // [-121.91251516342163, 37.29896096096796],
+
     },
 ];
-
-var myStyle = {
+// GeoJSON styling
+let myStyle = {
     color: "##ff7800",
     fill: "red",
     "fill-opacity": 0.5,
@@ -87,42 +83,43 @@ var myStyle = {
     offset: 1.5,
 };
 
-var markers = new Map();
-var routes = [];
-var lines = [];
-var atomicCounter = 1;
-let userMarker; // this variable for the purpose of not creating second robot icon inside runSimulation function
+let markers = new Map(); // ds to store all the markers
+let routes = []; // creating routes between markers
+let lines = []; // redrawing the line on map after delete executed
+let atomicCounter = 1; // create id helper
+let userMarker; // runSimulation helper
+let buttonId; // unique id for buttons to separate the difference inside runSimulation function
 
+// Area to write certain abilities to the polygon offset
 L.geoJson(myLines,
     {
-        style: myStyle,
-        onEachFeature: function (feature, layer) {
-            var coords = feature.coordinates;
-            var lengthOfCoordinates = feature.coordinates.length;
-            // square or polygon
+        style: myStyle, // access styling from above
+        "onEachFeature": function (feature, layer) {
+            // define a layer where features can be added
+            let coords = feature.coordinates;
+            let lengthOfCoordinates = feature.coordinates.length;
+            // Area where actual polygon starts
             layer.on("click", (e) => {
                 console.log("hitOnClickHandler");
-
                 // create marker
                 let marker = L.marker(
                     e.latlng,
                     e.pane
                 );
-
-                // give both the marker and the path a unique id
-                var route = {
+                // create id for both marker and route
+                let route = {
                     "id": atomicCounter,
                     "marker": marker
                 }
-
-                // push marker to array
+                // push marker and routes to the array
                 routes.push(route);
+                // increment atomic counter by one for next marker
                 atomicCounter++
-                deleteMarkerOnMouseClick(route);
+                deleteMarkerFromArrayOnMouseClick(route);
                 moveMarkerWithRouteOnMouseDrag(route);
+                // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
                 if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
             });
-
             // helps to draw the line the polygon
             let holdWorkArea;
             for (let i = 0; i < lengthOfCoordinates; i++) {
@@ -130,58 +127,51 @@ L.geoJson(myLines,
                 coords[i][0] = coords[i][1];
                 coords[i][1] = holdWorkArea;
             }
-            offset = L.polygon(coords, feature.properties).addTo(map);
+            // Define offset for map to display polygon properly
+            L.polygon(coords, feature.properties).addTo(map);
         },
     }).addTo(map);
-// ---------------------------------------------------------------------------------------------------------------------
-
-//You can just keep adding markers
-let currentNumSteps = 0;
-// number of steps to reach next marker
-let maxNumSteps = 1;
-/* User takes 1 step */
-const step = (pointsObj) => {
-    pathsAlgorithm(pointsObj);
-};
 
 // ---------------------------------------------------------------------------------------------------------------------
-// start the animation for the user icon
-
 function runSimulation(button) {
-    let buttonId = button.id;
+
+    buttonId = button.id;
+
     const seconds = 60;
     const numSteps = 20;
-    let pointsObj;
-
+    // display user icon only on the first element of markers
     if (userMarker === undefined) {
         initializeUserMarker(routes[0].marker);
     }
 
-    switch (buttonId) {
-        case "forward":
-            pointsObj = { i: 0, j: 1 };
-            setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
-            break;
-        case "backward":
-            pointsObj = { i: 1,};
-            setInterval(() => step(pointsObj), (seconds / numSteps) * 1000);
-            break;
-        default:
-            console.log("starting simulation");
+    let idx
+    // buttons on condition
+    if (buttonId === "move forward clicked") {
+        console.log(button.id);
+        idx = 1
+        document.getElementById("return back clicked").disabled = false;
+    } else if (buttonId === "return back clicked") {
+        idx = routes.length-1
+        console.log(button.id);
     }
-}
 
+    setInterval(() => step(pointsObj, button), (seconds / numSteps) * 100);
+
+    const step = (pointsObj, button) => {
+        pathsAlgorithm(pointsObj, button);
+    };
+
+    let pointsObj = {
+        i: idx,
+    };
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 function drawLineBetweenMarkers(fromRoute, toRoute) {
-
-    // switch case polyline case 1
-
-    var polyline = L.polyline([
+    let polyline = L.polyline([
             fromRoute.marker.getLatLng(),
             toRoute.marker.getLatLng(),
-        ],
-        {
+        ], {
             enableDraggableLines: true,
             color: "white",
             weight: 5,
@@ -189,22 +179,21 @@ function drawLineBetweenMarkers(fromRoute, toRoute) {
             smoothFactor: 1,
         }
     ).addTo(map);
-
+    // push polyline to the array lines to redraw the line on map after dragging and then delete executed
     lines.push({
         "polyline": polyline,
         "from": fromRoute.id,
         "to": toRoute.id,
     });
 
-
     console.log("routes: ", routes);
     console.log("lines: ", lines);
 
-
-    fromRouteLat = fromRoute.marker.getLatLng().lat;
-    fromRouteLng = fromRoute.marker.getLatLng().lng;
-    toRouteLat = toRoute.marker.getLatLng().lat;
-    toRouteLng = toRoute.marker.getLatLng().lng;
+    // function to calculate distance between two markers - works on static mode
+    let fromRouteLat = fromRoute.marker.getLatLng().lat;
+    let fromRouteLng = fromRoute.marker.getLatLng().lng;
+    let toRouteLat = toRoute.marker.getLatLng().lat;
+    let toRouteLng = toRoute.marker.getLatLng().lng;
 
     polyline.bindPopup("<b>Distance:</b> "
         + haversineDistance(fromRouteLat, fromRouteLng, toRouteLat, toRouteLng)
@@ -214,35 +203,55 @@ function drawLineBetweenMarkers(fromRoute, toRoute) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-function pathsAlgorithm(pointsObj) {
 
-    if (pointsObj.i < routes.length) {
-        // move the user along the line by 1 step ()
+let currentNumSteps = 5;
+// number of steps to reach next marker
+let maxNumSteps = 1;
+
+function pathsAlgorithm(pointsObj, button) {
+    if (pointsObj.i < routes.length && pointsObj.i > 0) {
+        document.getElementById('return back clicked').disabled = button.id !== 'move forward clicked';
+        bidirectionalRouting(pointsObj, routes, maxNumSteps, button);
+    }
+}
+
+function bidirectionalRouting(pointsObj, routes, maxNumSteps, button) {
+
+    if (button.id === 'move forward clicked') {
+        console.log('move pointsObj.i: ', pointsObj.i);
         let pointA = routes[pointsObj.i].marker.getLatLng();
         let pointB = routes[pointsObj.i++].marker.getLatLng();
-
-        // user moving gradually to the next point dynamically
+        // user moving gradually to the next point of the line
         let lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
         let lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
         let newLatLng = new L.LatLng(lat, lng);
-
         userMarker.marker.setLatLng(newLatLng);
-        // number of steps user taking to move forward
-        currentNumSteps--;
-        // once the user reaches point B, set pointA = pointB and pointB = point C, it must go dinamically.
-
-        switch (pointsObj.i) {
-            case "forward":
-                if (currentNumSteps === maxNumSteps) pointsObj.i++;
-                break;
-            case "backward":
-                if (currentNumSteps === maxNumSteps) pointsObj.i--;
-                break;
-        }
-
-        // remove switch case if needed
-        // if (currentNumSteps === maxNumSteps) pointsObj.i++;
+        // once the user reaches next point, set pointA = pointB, pointB = point C, and etc, dynamically.
+        currentNumSteps++;
+        if (currentNumSteps === maxNumSteps) pointsObj.i++;
     }
+
+
+    if (button.id === 'return back clicked') {
+        console.log("shrek: " + pointsObj.i)
+        let pointA = routes[pointsObj.i--].marker.getLatLng();
+        let pointB = routes[pointsObj.i].marker.getLatLng();
+
+        // user moving gradually to the next point of the line
+        let lat = (pointA.lat + (pointB.lat - pointA.lat) / maxNumSteps);
+        let lng = (pointA.lng + (pointB.lng - pointA.lng) / maxNumSteps);
+        let newLatLng = new L.LatLng(lat, lng);
+        userMarker.marker.setLatLng(newLatLng);
+        // once the user reaches next point, set pointC = pointB, pointB = point A, and etc, dynamically.
+
+        if (maxNumSteps === currentNumSteps) pointsObj.i--;
+
+
+        currentNumSteps = 0;
+        console.log("print i after maxNumSteps", pointsObj.i)
+    }
+
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -269,7 +278,7 @@ function moveMarkerWithRouteOnMouseDrag(route) {
                 ]);
             }
 
-            // update the distance of the line on drag
+            // function to calculate distance between two markers - works on drag mode
             let fromLinesLat = lines[i].polyline.getLatLngs()[0].lat;
             let fromLinesLng = lines[i].polyline.getLatLngs()[0].lng;
             let toLinesLat = lines[i].polyline.getLatLngs()[1].lat;
@@ -285,15 +294,16 @@ function moveMarkerWithRouteOnMouseDrag(route) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-function deleteMarkerOnMouseClick(route) {
+function deleteMarkerFromArrayOnMouseClick(route) {
     route.marker.on("click", () => {
         console.log("Marker has been deleted!!!");
         map.removeLayer(route.marker);
 
+        // initializing new marker variables after deleting one
         let newFrom = 0;
         let newTo = 0;
 
-        // deleting lines
+        // deleting previous lines created from the map using splice
         let i = 0;
         while (i < lines.length) {
             if (lines[i].from === route.id) {
@@ -313,10 +323,10 @@ function deleteMarkerOnMouseClick(route) {
         console.log("newFrom: ", newFrom);
         console.log("newTo: ", newTo);
 
+        // redrawing the line after deleting one with the help of newFrom and newTo
         if (newFrom !== 0 && newTo !== 0) {
             let fromRoute;
             let toRoute;
-
             for (let i = 0; i < routes.length; i++) {
                 if (routes[i].id === newFrom) {
                     fromRoute = routes[i];
@@ -326,39 +336,36 @@ function deleteMarkerOnMouseClick(route) {
             }
             drawLineBetweenMarkers(fromRoute, toRoute);
         }
-
+        // deleting routes  from the array
         for (let i = 0; i < routes.length; i++) {
             if (routes[i].id === route.id) {
                 routes.splice(i, 1);
                 break
             }
         }
-
     });
     route.marker.addTo(map);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 function initializeUserMarker(marker) {
+    // User Marker styling
     const UserIcon = L.Icon.extend({
         options: {
-            // 38, 95
-            iconSize: [50, 100],
+            iconSize: [50, 100],  // 38, 95 earlier
             shadowSize: [0, 0],
             iconAnchor: [22, 94],
             shadowAnchor: [4, 62],
             popupAnchor: [-3, -76],
         },
     });
-
-    // user icon
-    var userIcon = new UserIcon({
+    // Upload the user icon
+    let userIcon = new UserIcon({
         iconUrl: "./assets/images/robot.png",
         shadowUrl:
-            "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+            "https://leafletjs.com/examples/custom-icons/leaf-shadow.png",
     });
-
-    // add icon to map
+    // Add icon to map
     userMarker = {
         "id": atomicCounter,
         "marker": L.marker(marker.getLatLng(), {icon: userIcon}).addTo(map)
@@ -388,17 +395,17 @@ function showJSON() {
 
 // ---------------------------------------------------------------------------------------------------------------------
 function haversineDistance(lat1, lon1, lat2, lon2) {
-    var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(lat2 - lat1);  // deg2rad below
-    var dLon = deg2rad(lon2 - lon1);
-    var a =
+    let R = 6371; // Radius of the earth in km
+    let dLat = deg2rad(lat2 - lat1);  // deg2rad below
+    let dLon = deg2rad(lon2 - lon1);
+    let a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c; // Distance in km
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+     // Distance in km
     // miles = d * 0.62137; // feet = d * 3280.839895; // inches = d * 39370.078740;
-    return d;
+    return R * c;
 }
 
 function deg2rad(deg) {
@@ -406,5 +413,3 @@ function deg2rad(deg) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-
-// return icon back to point in the beginning of the line
