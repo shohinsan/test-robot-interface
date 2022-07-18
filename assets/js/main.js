@@ -1,5 +1,5 @@
 // Define the map
-const map = L.map("map").setView([37.29422, 238.08416], 13);
+const map = L.map("map",).setView([37.29422, 238.08416], 13);
 // Google Maps Tile Layer
 googleStreets = L.tileLayer(
     "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
@@ -22,6 +22,39 @@ smoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark
 });
 // Permanently display tile layer on the map
 smoothDark.addTo(map);
+// Define coordinates
+const floor1Area1 =
+    [
+        [37.25929865437848, 238.01673889160156],
+        [37.25929865437848, 238.15698623657224],
+        [37.33413244661209, 238.15698623657224],
+        [37.33413244661209, 238.01673889160156],
+        [37.25929865437848, 238.01673889160156],
+    ]
+
+const floor2Area1 =
+    [
+        [37.23388194398141, 238.02841186523438],
+        [37.19095471582605, 237.9848098754883],
+        [37.171807316143166, 238.0730438232422],
+        [37.224314295273366, 238.07956695556643],
+        [37.23388194398141, 238.02841186523438],
+    ]
+const floor2Area2 =
+    [
+        [37.21583907837921, 238.12076568603516],
+        [37.157306770819574, 238.07579040527344],
+        [37.14061402065652, 238.1564712524414],
+        [37.16770367048253, 238.18428039550778],
+        [37.21583907837921, 238.12076568603516],
+    ]
+// Add coordinates to the array of polygons separately
+const poly1floor1 = L.polygon(floor1Area1, {color: 'aqua', strokeWidth: 3}).addTo(map);
+const poly1floor2 = L.polygon(floor2Area1, {color: 'red', strokeWidth: 3}).addTo(map);
+const poly2floor2 = L.polygon(floor2Area2, {color: 'yellow', strokeWidth: 3}).addTo(map);
+// Draw polygons on the map
+const floor1 = L.layerGroup([poly1floor1]).addTo(map);
+const floor2 = L.layerGroup([poly1floor2, poly2floor2]).addTo(map);
 // Map Controller at Top Right Corner
 // https://leafletjs.com/reference.html#control-layers
 let baseLayers = {
@@ -31,15 +64,16 @@ let baseLayers = {
 };
 // Additional Map Controller to choose different floors
 let overlays = {
-
+    "Floor 1": floor1,
+    "Floor 2": floor2,
 };
 L.control.layers(baseLayers, overlays).addTo(map);
 // GeoJSON
-let myLines = [
+let Geometry = [
     {
         // LineString is a type of Geometry used for representing  both a polyline and a polygon on a map.
-        type: "LineString",
-        properties: {
+        "type": "LineString",
+        "properties": {
             stroke: "#555555",
             "stroke-width": 2,
             "stroke-opacity": 1,
@@ -49,7 +83,6 @@ let myLines = [
             offset: 5,
         },
 
-        // Have your coordinates of shapes here
         coordinates: [
             [238.01673889160156, 37.25929865437848],
             [238.15698623657224, 37.25929865437848],
@@ -57,21 +90,7 @@ let myLines = [
             [238.01673889160156, 37.33413244661209],
             [238.01673889160156, 37.25929865437848],
         ],
-
-        // [-121.9178581237793, 37.29872199115923],
-        // [-121.92221403121948, 37.29602499353953],
-        // [-121.91805124282835, 37.29083556154404],
-        // [-121.91287994384766, 37.29083556154404],
-        // [-121.91337347030638, 37.29884147615852],
-        // [-121.9178581237793, 37.29872199115923],
-
-        // [-121.91251516342163, 37.29896096096796],
-        // [-121.91230058670044, 37.29093798800685],
-        // [-121.90706491470337, 37.29076727715807],
-        // [-121.90700054168701, 37.29894389172109],
-        // [-121.91251516342163, 37.29896096096796],
-
-    },
+    }
 ];
 // GeoJSON styling
 let myStyle = {
@@ -91,13 +110,10 @@ let userMarker; // runSimulation helper
 let buttonId; // unique id for buttons to separate the difference inside runSimulation function
 
 // Area to write certain abilities to the polygon offset
-L.geoJson(myLines,
+L.geoJson(Geometry,
     {
         style: myStyle, // access styling from above
         "onEachFeature": function (feature, layer) {
-            // define a layer where features can be added
-            let coords = feature.coordinates;
-            let lengthOfCoordinates = feature.coordinates.length;
             // Area where actual polygon starts
             layer.on("click", (e) => {
                 console.log("hitOnClickHandler");
@@ -120,16 +136,9 @@ L.geoJson(myLines,
                 // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
                 if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
             });
-            // helps to draw the line the polygon
-            let holdWorkArea;
-            for (let i = 0; i < lengthOfCoordinates; i++) {
-                holdWorkArea = coords[i][0];
-                coords[i][0] = coords[i][1];
-                coords[i][1] = holdWorkArea;
-            }
-            // Define offset for map to display polygon properly
-            L.polygon(coords, feature.properties).addTo(map);
         },
+
+
     }).addTo(map);
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -151,7 +160,7 @@ function runSimulation(button) {
         idx = 1
         document.getElementById("return back clicked").disabled = false;
     } else if (buttonId === "return back clicked") {
-        idx = routes.length-1
+        idx = routes.length - 1
         console.log(button.id);
     }
 
@@ -383,7 +392,7 @@ function showJsonOnButtonClick(content, fileName, contentType) {
 
 // Additional function for JSON
 function showJSON() {
-    showJsonOnButtonClick(JSON.stringify(myLines), "yourfile.json", "text/plain");
+    showJsonOnButtonClick(JSON.stringify(Geometry), "yourfile.json", "text/plain");
 
     // const markers = [];
     routes.forEach(item => {
@@ -403,7 +412,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
         Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-     // Distance in km
+    // Distance in km
     // miles = d * 0.62137; // feet = d * 3280.839895; // inches = d * 39370.078740;
     return R * c;
 }
