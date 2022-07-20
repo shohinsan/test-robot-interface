@@ -98,6 +98,8 @@ let myStyle = {
 let markers = new Map(); // ds to store all the markers
 let routes = []; // creating routes between markers
 let lines = []; // redrawing the line on map after delete executed
+
+
 let atomicCounter = 1; // create id helper
 let userMarker; // runSimulation helper
 let buttonId; // unique id for buttons to separate the difference inside runSimulation function
@@ -162,31 +164,6 @@ let Geometry = [{
 ];
 
 
-// // Area to write certain abilities to the polygon offset
-// L.geoJson(Geometry,{
-//     style: myStyle, // access styling from above for markers
-//     "onEachFeature": function (feature, layer) {
-//         // for each polygon of floors 1 and 2 create separate markers
-//             // Area where actual polygon starts
-//             layer.on("click", (e) => {
-//                 if (feature.floor === "fullFloor1") {
-//                     // create marker
-//                     let marker = L.marker(e.latlng, e.pane);
-//                     // create id for both marker and route
-//                     let route = {"id": atomicCounter, "marker": marker}
-//                     // push marker and routes to the array
-//                     routes.push(route);
-//                     // increment atomic counter by one for next marker
-//                     atomicCounter++
-//                     deleteMarkerFromArrayOnMouseClick(route);
-//                     moveMarkerWithRouteOnMouseDrag(route);
-//                     // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
-//                     if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
-//                 }
-//             });
-//     },
-// }).addTo(map);
-
 // Area to write certain abilities to the polygon offset
 
 L.geoJson(Geometry, {
@@ -199,6 +176,8 @@ L.geoJson(Geometry, {
 // ---------------------------------------------------------------------------------------------------------------------
 function onEachFeature(feature, layer) {
     layer.on("click", (e) => {
+
+
         // create marker
         let marker = L.marker(e.latlng, e.pane);
         // create id for both marker and route
@@ -211,22 +190,17 @@ function onEachFeature(feature, layer) {
         moveMarkerWithRouteOnMouseDrag(route);
         // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
         if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
+
+
     });
 
     if (floor1 !== floor2 && feature.floor === "fullFloor1") {
-        // hide markers
-
         layer.addTo(floor1);
-
-
     }
+
     if (floor2 !== floor1 && feature.floor === "fullFloor2") {
         layer.addTo(floor2);
     }
-
-
-
-
 
 }
 
