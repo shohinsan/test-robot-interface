@@ -192,8 +192,8 @@ let Geometry = [{
 L.geoJson(Geometry, {
     style: myStyle, // access styling from above for markers
     "onEachFeature": onEachFeature,
-
-},).addTo(map);
+    },
+    ).addTo(map);
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -212,6 +212,22 @@ function onEachFeature(feature, layer) {
         // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
         if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
     });
+
+    if (floor1 !== floor2 && feature.floor === "fullFloor1") {
+        // hide markers
+
+        layer.addTo(floor1);
+
+
+    }
+    if (floor2 !== floor1 && feature.floor === "fullFloor2") {
+        layer.addTo(floor2);
+    }
+
+
+
+
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
