@@ -1,3 +1,21 @@
+// [238.01673889160156, 37.25929865437848],
+// [238.15698623657224, 37.25929865437848],
+// [238.15698623657224, 37.33413244661209],
+// [238.01673889160156, 37.33413244661209],
+// [238.01673889160156, 37.25929865437848],
+
+// [238.02841186523438, 37.23388194398141],
+// [237.9848098754883, 37.19095471582605],
+// [238.0730438232422, 37.171807316143166],
+// [238.07956695556643, 37.224314295273366],
+// [238.02841186523438, 37.23388194398141],
+
+// [238.12076568603516, 37.21583907837921],
+// [238.07579040527344, 37.157306770819574],
+// [238.1564712524414, 37.14061402065652],
+// [238.18428039550778, 37.16770367048253],
+// [238.12076568603516, 37.21583907837921],
+
 // Define the map
 const map = L.map("map",).setView([37.29422, 238.08416], 13);
 // Google Maps Tile Layer
@@ -23,38 +41,37 @@ smoothDark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark
 // Permanently display tile layer on the map
 smoothDark.addTo(map);
 // Define coordinates
-const floor1Area1 =
-    [
-        [37.25929865437848, 238.01673889160156],
-        [37.25929865437848, 238.15698623657224],
-        [37.33413244661209, 238.15698623657224],
-        [37.33413244661209, 238.01673889160156],
-        [37.25929865437848, 238.01673889160156],
-    ]
+let floor1Area = [
+    [37.25929865437848, 238.01673889160156],
+    [37.25929865437848, 238.15698623657224],
+    [37.33413244661209, 238.15698623657224],
+    [37.33413244661209, 238.01673889160156],
+    [37.25929865437848, 238.01673889160156],
+]
 
-const floor2Area1 =
+let floor2Area = [
     [
         [37.23388194398141, 238.02841186523438],
         [37.19095471582605, 237.9848098754883],
         [37.171807316143166, 238.0730438232422],
         [37.224314295273366, 238.07956695556643],
         [37.23388194398141, 238.02841186523438],
-    ]
-const floor2Area2 =
+    ],
     [
         [37.21583907837921, 238.12076568603516],
         [37.157306770819574, 238.07579040527344],
         [37.14061402065652, 238.1564712524414],
         [37.16770367048253, 238.18428039550778],
         [37.21583907837921, 238.12076568603516],
-    ]
+    ],
+]
+
 // Add coordinates to the array of polygons separately
-const poly1floor1 = L.polygon(floor1Area1, {color: 'aqua', strokeWidth: 3}).addTo(map);
-const poly1floor2 = L.polygon(floor2Area1, {color: 'red', strokeWidth: 3}).addTo(map);
-const poly2floor2 = L.polygon(floor2Area2, {color: 'yellow', strokeWidth: 3}).addTo(map);
-// Draw polygons on the map
-const floor1 = L.layerGroup([poly1floor1]).addTo(map);
-const floor2 = L.layerGroup([poly1floor2, poly2floor2]).addTo(map);
+let polyFloor1 = L.polygon(floor1Area, {color: 'aqua', strokeWidth: 3}).addTo(map);
+let polyFloor2 = L.MultyPolygon = L.polygon(floor2Area, {color: 'yellow', strokeWidth: 3}).addTo(map);
+// Draw polygons on the map = bracket inside polyFloor does the job
+let floor1 = L.layerGroup([polyFloor1]).addTo(map);
+let floor2 = L.layerGroup([polyFloor2]).addTo(map);
 // Map Controller at Top Right Corner
 // https://leafletjs.com/reference.html#control-layers
 let baseLayers = {
@@ -68,31 +85,7 @@ let overlays = {
     "Floor 2": floor2,
 };
 L.control.layers(baseLayers, overlays).addTo(map);
-// GeoJSON
-let Geometry = [
-    {
-        // LineString is a type of Geometry used for representing  both a polyline and a polygon on a map.
-        "type": "LineString",
-        "properties": {
-            stroke: "#555555",
-            "stroke-width": 2,
-            "stroke-opacity": 1,
-            fill: "#11ff00",
-            "fill-opacity": 0.5,
-            weight: 5,
-            offset: 5,
-        },
-
-        coordinates: [
-            [238.01673889160156, 37.25929865437848],
-            [238.15698623657224, 37.25929865437848],
-            [238.15698623657224, 37.33413244661209],
-            [238.01673889160156, 37.33413244661209],
-            [238.01673889160156, 37.25929865437848],
-        ],
-    }
-];
-// GeoJSON styling
+// GeoJSON styling for markers
 let myStyle = {
     color: "##ff7800",
     fill: "red",
@@ -109,39 +102,121 @@ let atomicCounter = 1; // create id helper
 let userMarker; // runSimulation helper
 let buttonId; // unique id for buttons to separate the difference inside runSimulation function
 
-// Area to write certain abilities to the polygon offset
-L.geoJson(Geometry,
+let Geometry = [{
+    // Polygon is a type of Geometry used for representing  both a polyline and a polygon on a map.
+    "type": "Polygon",
+    "floor": "fullFloor1",
+    "properties": {
+        stroke: "#555555",
+        "stroke-width": 2,
+        "stroke-opacity": 1,
+        fill: "#11ff00",
+        "fill-opacity": 0.5,
+        weight: 5,
+        offset: 5,
+    },
+
+    "coordinates": [[
+
+        [238.01673889160156, 37.25929865437848],
+        [238.15698623657224, 37.25929865437848],
+        [238.15698623657224, 37.33413244661209],
+        [238.01673889160156, 37.33413244661209],
+        [238.01673889160156, 37.25929865437848],
+
+    ]]
+
+},
     {
-        style: myStyle, // access styling from above
-        "onEachFeature": function (feature, layer) {
-            // Area where actual polygon starts
-            layer.on("click", (e) => {
-                console.log("hitOnClickHandler");
-                // create marker
-                let marker = L.marker(
-                    e.latlng,
-                    e.pane
-                );
-                // create id for both marker and route
-                let route = {
-                    "id": atomicCounter,
-                    "marker": marker
-                }
-                // push marker and routes to the array
-                routes.push(route);
-                // increment atomic counter by one for next marker
-                atomicCounter++
-                deleteMarkerFromArrayOnMouseClick(route);
-                moveMarkerWithRouteOnMouseDrag(route);
-                // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
-                if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
-            });
+        "type": "Polygon",
+        "floor": "fullFloor2",
+        "properties": {
+            stroke: "#555555",
+            "stroke-width": 2,
+            "stroke-opacity": 1,
+            fill: "#11ff00",
+            "fill-opacity": 0.5,
+            weight: 5,
+            offset: 5,
         },
 
+        "coordinates": [[
 
-    }).addTo(map);
+            [238.02841186523438, 37.23388194398141],
+            [237.9848098754883, 37.19095471582605],
+            [238.0730438232422, 37.171807316143166],
+            [238.07956695556643, 37.224314295273366],
+            [238.02841186523438, 37.23388194398141],
+
+            [238.12076568603516, 37.21583907837921],
+            [238.07579040527344, 37.157306770819574],
+            [238.1564712524414, 37.14061402065652],
+            [238.18428039550778, 37.16770367048253],
+            [238.12076568603516, 37.21583907837921],
+
+        ]]
+
+    }
+
+
+];
+
+
+// // Area to write certain abilities to the polygon offset
+// L.geoJson(Geometry,{
+//     style: myStyle, // access styling from above for markers
+//     "onEachFeature": function (feature, layer) {
+//         // for each polygon of floors 1 and 2 create separate markers
+//             // Area where actual polygon starts
+//             layer.on("click", (e) => {
+//                 if (feature.floor === "fullFloor1") {
+//                     // create marker
+//                     let marker = L.marker(e.latlng, e.pane);
+//                     // create id for both marker and route
+//                     let route = {"id": atomicCounter, "marker": marker}
+//                     // push marker and routes to the array
+//                     routes.push(route);
+//                     // increment atomic counter by one for next marker
+//                     atomicCounter++
+//                     deleteMarkerFromArrayOnMouseClick(route);
+//                     moveMarkerWithRouteOnMouseDrag(route);
+//                     // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
+//                     if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
+//                 }
+//             });
+//     },
+// }).addTo(map);
+
+// Area to write certain abilities to the polygon offset
+
+L.geoJson(Geometry, {
+    style: myStyle, // access styling from above for markers
+    "onEachFeature": onEachFeature,
+
+},).addTo(map);
+
 
 // ---------------------------------------------------------------------------------------------------------------------
+function onEachFeature(feature, layer) {
+    layer.on("click", (e) => {
+        // create marker
+        let marker = L.marker(e.latlng, e.pane);
+        // create id for both marker and route
+        let route = {"id": atomicCounter, "marker": marker}
+        // push marker and routes to the array
+        routes.push(route);
+        // increment atomic counter by one for next marker
+        atomicCounter++
+        deleteMarkerFromArrayOnMouseClick(route);
+        moveMarkerWithRouteOnMouseDrag(route);
+        // think of parameters inside drawLineBetweenMarkers function as "from" and "to"
+        if (routes.length > 1) drawLineBetweenMarkers(routes[routes.length - 2], routes[routes.length - 1]);
+    });
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+
 function runSimulation(button) {
 
     buttonId = button.id;
